@@ -1,0 +1,12 @@
+## Interface: 120105, 120107
+## Title: Teamfit Tactics
+## Notes: Personal walking quests with manually entered real-world steps.
+## Author: Chingu Labs
+## Version: 0.1.0
+## SavedVariablesPerCharacter: TeamfitTacticsDB
+## X-License: MIT
+
+Quest.lua
+Tracker.lua
+Addon.lua
+
