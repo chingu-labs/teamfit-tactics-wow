@@ -1,3 +1,4 @@
+-- Retired manual prototype. Not loaded by the product addon.
 local _, ns = ...
 local Quest = {}
 ns.Quest = Quest

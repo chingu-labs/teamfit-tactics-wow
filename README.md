@@ -1,68 +1,49 @@
 # Teamfit Tactics for WoW
 
-Turn tonight's leveling session into a walking challenge.
-
-A free, MIT-licensed addon by Chingu Labs, developed at
+A free, MIT-licensed addon by Chingu Labs:
 [chingu-labs/teamfit-tactics-wow](https://github.com/chingu-labs/teamfit-tactics-wow).
 
-**Status: early prototype.** Step progress is manually entered, and the addon
-has not been tested inside WoW. Publishing the source does not establish
-in-game compatibility or a supported addon release.
+**Product requirement: a live in-game counter of real-world steps.** Initial
+proof targets WoW Classic on Windows and macOS, using a phone/watch source.
+Manual entries, pasted summaries, after-session recaps, routine UI reloads and
+an OS overlay do not satisfy that requirement.
 
-## First prototype
+## Current status
 
-- Set a personal walking quest, such as 2,000 real-world steps.
-- Enter the steps you took during that quest from your own step counter.
-- See a small, draggable goal tracker and a goal-reached message.
-- Finish to save a recap; retain the latest 20 recaps and lifetime local totals.
-- Resume unfinished quests after a UI reload or login on the same character.
+The manual-entry prototype is retired. Its code is kept under `legacy/`, outside
+the addon manifest and installation package. Existing per-character saved data
+is preserved without being interpreted as measured steps. `/teamfit` reports
+that live tracking is not yet available; it collects no steps.
 
-**Every step total is manually entered.** The addon does not measure steps,
-read a watch, connect to Teamfit accounts, award leaderboard credit, or verify
-that you were walking or playing. Enter the steps taken during the quest, not
-your whole-day total. Updating a total replaces the previous entry; it does not
-add to it. Starting a quest does not reset your physical step counter.
+The next gate is [the isolated live-ingress diagnostic](spikes/live-ingress/README.md).
+It tests whether the actual Classic client can automatically read fresh data
+through previously unused load-on-demand addon slots. It uses synthetic sequence
+numbers explicitly labeled as transport fixtures, never step counts.
 
-No combat-log access, chat broadcasts, polling, external libraries, telemetry,
-custom artwork, or gameplay automation is included. All state stays in WoW's
-per-character SavedVariables. An unfinished quest stays open until you finish
-it; its timestamps do not establish playtime.
+**A live step counter has not been implemented or verified.** The diagnostic
+is not a sensor bridge, a renewable transport, or evidence of Blizzard approval.
+No client was installed or controlled, and no production service was changed.
+Phone acquisition, any watch delivery, secure transport, source freshness and
+account isolation still need their own end-to-end proof.
 
-## Install locally
+## Why test the bridge first?
 
-The initial manifest targets Retail interface versions `120105` and `120107`,
-based on current addon manifests. **The addon has not been tested inside WoW.**
-Classic support and additional client versions need separate in-game checks.
+Ordinary Lua files already loaded into WoW do not become live data merely
+because a companion replaces them on disk. An author-documented alternative
+loads a fresh addon from a pre-created pool for each update. That pool is finite:
+200 slots at one read every five seconds lasts 16 minutes 40 seconds. A
+four-hour session at that cadence needs at least 2,880 slots. Increasing the
+pool is a hypothesis to measure, not a demonstrated product solution.
 
-1. Clone this repository and run `make package` to build the installation ZIP.
-2. Extract `TeamfitTactics` into your WoW installation's
-   `_retail_/Interface/AddOns/` directory.
-3. Restart WoW if this is a new addon folder, enable **Teamfit Tactics**, and
-   enter `/teamfit`.
-
-The installed layout must be `AddOns/TeamfitTactics/TeamfitTactics.toc`, not
-an extra nested repository directory. Installing the addon is a manual step;
-the build does not locate or modify a WoW installation.
-
-## Commands
-
-| Command | Action |
-| --- | --- |
-| `/teamfit` | Show or hide the tracker |
-| `/teamfit start 2000` | Start a quest with a 2,000-step goal |
-| `/teamfit steps 650` | Replace the current quest's manually entered total |
-| `/teamfit finish` | Save a recap and finish the current quest |
-| `/teamfit history` | Print the latest five recaps |
-| `/teamfit resetposition` | Return the tracker to the center of the screen |
-| `/teamfit help` | List commands |
-
-Use the tracker buttons for the same start, update, and finish actions. Goals
-must be whole numbers from 1 to 1,000,000; step totals may also be zero.
+The diagnostic deliberately exposes stale, stopped and exhausted states. It
+never reloads the UI, writes game memory, injects input, uses sound-file
+signaling, connects to an account, or awards fitness credit.
 
 ## Development
 
-Requires Lua 5.1, its `luac` compiler, Make, and Python 3 (packaging only).
-No package installation or global configuration is performed by these targets.
+Requires Lua 5.1 and its `luac` compiler, Make, and Python 3. No third-party
+Python packages are needed. Override `LUA=...`, `LUAC=...` and `PYTHON=...` as
+needed on the host.
 
 ```sh
 make check
@@ -70,36 +51,24 @@ make test
 make package
 ```
 
-Override `LUA=...` and `LUAC=...` for binaries outside `PATH`. Tests cover the
-quest lifecycle, correction of totals, persistence, and bounded history. UI
-smoke tests exercise registration and button actions through WoW API doubles;
-they do not render the interface or emulate Blizzard's runtime.
+`make package` builds the current product shell, not a working live counter.
+Generate the diagnostic separately for your exact client build using its
+[setup instructions](spikes/live-ingress/README.md).
 
-Before a supported addon release, check on a real Retail client: installation, readable
-layout, keyboard input, dragging and offscreen clamping, goal completion,
-close/reopen, `/reload`, logout/login, character isolation, and operation during
-combat without errors. No release acceptance or visual verification is claimed.
-
-## Connection roadmap
-
-First validate whether players enjoy setting and completing walking quests.
-Then prototype an explicit session-summary import from the Teamfit phone app,
-followed by a desktop-assisted bridge if that improves the experience.
-Neither connection exists in this prototype. A conventional file-based bridge
-may need a UI reload, so continuous live updates are not promised.
-
-Keep imported sensor data distinct from manual entries and enforce any
-competitive credit in Teamfit's backend. The addon remains free and useful
-without an account. Do not add promotional popups or subscription gates.
+Tests cover preservation of legacy data, disabled manual commands, transport
+freshness/replay/exhaustion states, fixture generation and the Python-to-Lua
+payload contract. WoW API doubles do not render the interface or prove runtime
+file loading, client compatibility, performance or real sensor behavior.
 
 ## References
 
-- [Blizzard's addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534)
-- [Current DBM interface manifest](https://github.com/DeadlyBossMods/DeadlyBossMods/blob/master/DBM-Core/DBM-Core.toc)
-- [Client Frame API documentation](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/SimpleFrameAPIDocumentation.lua)
-- [TSM's documented reload requirement for updated external data](https://support.tradeskillmaster.com/en_US/addon/why-does-my-addon-keep-telling-me-no-recent-auctiondb-scan-data-found)
+- [Blizzard addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534)
+- [Generated client addon API](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/AddOnsDocumentation.lua)
+- [Author-documented finite-slot bridge](https://github.com/chelinho139/wow-ai/blob/main/docs/ARCHITECTURE.md)
+- [Current interface-version reference](https://github.com/DeadlyBossMods/DeadlyBossMods/blob/master/DBM-Core/DBM-Core.toc)
 
 ## License
 
-[MIT](LICENSE). No Blizzard artwork, trademarks, or third-party addon code is
-licensed by this repository. This is an independent community project.
+[MIT](LICENSE) for our original source. No Blizzard artwork, trademarks, or
+third-party addon code is licensed by this repository. Independent community
+project; not a supported addon release.

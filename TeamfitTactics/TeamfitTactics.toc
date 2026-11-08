@@ -1,11 +1,9 @@
-## Interface: 120105, 120107
+## Interface: 11509, 50504
 ## Title: Teamfit Tactics
-## Notes: Personal walking quests with manually entered real-world steps.
+## Notes: Live real-world step tracking, currently awaiting bridge verification.
 ## Author: Chingu Labs
-## Version: 0.1.0
+## Version: 0.2.0-dev
 ## SavedVariablesPerCharacter: TeamfitTacticsDB
 ## X-License: MIT
 
-Quest.lua
-Tracker.lua
 Addon.lua

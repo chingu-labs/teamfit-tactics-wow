@@ -12,7 +12,7 @@ local function equal(actual, expected)
 end
 
 local ns = {}
-assert(loadfile("TeamfitTactics/Quest.lua"))("TeamfitTactics", ns)
+assert(loadfile("legacy/Quest.lua"))("TeamfitTactics", ns)
 local Quest = ns.Quest
 
 test("corrections replace totals and finished quests cannot count twice", function()
@@ -106,134 +106,22 @@ test("backwards clock cannot finish or mutate an active quest", function()
     assert(Quest.Finish(state, 201))
 end)
 
--- Explicit UI doubles: no fallback methods, game simulation, or rendering.
-local methods = {}
-for _, method in ipairs({
-    "SetSize", "SetClampedToScreen", "SetMovable", "EnableMouse", "RegisterForDrag",
-    "SetBackdrop", "SetBackdropColor", "SetBackdropBorderColor", "ClearAllPoints",
-    "StartMoving", "StopMovingOrSizing", "SetAutoFocus", "SetNumeric", "SetMaxLetters",
-    "ClearFocus", "SetStatusBarTexture", "SetStatusBarColor", "SetMinMaxValues",
-    "SetAllPoints", "SetColorTexture", "SetWidth", "SetJustifyH",
-}) do
-    methods[method] = function() end
-end
-function methods:SetPoint(...) self.point = { ... } end
-function methods:SetScript(event, callback) self.scripts[event] = callback end
-function methods:RegisterEvent(event) self.events[event] = true end
-function methods:UnregisterEvent(event) self.events[event] = nil end
-function methods:SetText(text) self.text = tostring(text) end
-function methods:GetText() return self.text or "" end
-function methods:SetEnabled(enabled)
-    assert(type(enabled) == "boolean")
-    self.enabled = enabled
-end
-function methods:SetShown(shown) self.shown = shown end
-function methods:Show() self.shown = true end
-function methods:Hide() self.shown = false end
-function methods:GetCenter() return 500, 400 end
-function methods:SetValue(value) self.value = value end
-
-local function widget()
-    return setmetatable({ scripts = {}, events = {}, children = {} }, { __index = methods })
-end
-function methods:CreateFontString()
-    local child = widget()
-    table.insert(self.children, child)
-    return child
-end
-function methods:CreateTexture() return widget() end
-
-local now = 1000
-local function boot(saved)
+test("retired commands cannot modify or reinterpret legacy step data", function()
+    local saved = { version = 1, active = { steps = 650, source = "manual" } }
     TeamfitTacticsDB = saved
-    TeamfitTacticsTracker = nil
-    UIParent = widget()
     SlashCmdList = {}
-    local frames, messages = {}, {}
-    DEFAULT_CHAT_FRAME = { AddMessage = function(_, text) table.insert(messages, text) end }
-    GetServerTime = function() return now end
-    CreateFrame = function(_, name, parent)
-        local frame = widget()
-        table.insert(frames, frame)
-        if name then _G[name] = frame end
-        if parent then table.insert(parent.children, frame) end
-        return frame
+    local messages = {}
+    DEFAULT_CHAT_FRAME = { AddMessage = function(_, value) table.insert(messages, value) end }
+    assert(loadfile("TeamfitTactics/Addon.lua"))()
+    for _, command in ipairs({ "steps 9999", "start 2000", "finish" }) do
+        SlashCmdList.TEAMFITTACTICS(command)
+        equal(TeamfitTacticsDB, saved)
+        equal(saved.active.steps, 650)
+        equal(saved.active.source, "manual")
+        assert(messages[#messages]:find("removed", 1, true))
     end
-    local addon = {}
-    for _, file in ipairs({ "Quest", "Tracker", "Addon" }) do
-        assert(loadfile("TeamfitTactics/" .. file .. ".lua"))("TeamfitTactics", addon)
-    end
-    local events = frames[1]
-    events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
-    equal(TeamfitTacticsTracker, nil)
-    events.scripts.OnEvent(events, "ADDON_LOADED", "TeamfitTactics")
-    equal(events.events.ADDON_LOADED, nil)
-    return TeamfitTacticsTracker, messages
-end
-
-test("slash command lifecycle updates the tracker and saves one recap", function()
-    local tracker, messages = boot()
-    equal(tracker.shown, true)
-    equal(tracker.start.enabled, true)
-    equal(tracker.steps.enabled, false)
-    SlashCmdList.TEAMFITTACTICS("start 2000")
-    equal(tracker.goal.enabled, false)
-    SlashCmdList.TEAMFITTACTICS("steps 2500")
-    equal(tracker.progress.value, 1)
-    assert(messages[#messages]:find("goal reached", 1, true))
-    now = 1100
-    SlashCmdList.TEAMFITTACTICS("finish")
-    equal(#TeamfitTacticsDB.history, 1)
-    equal(TeamfitTacticsDB.history[1].steps, 2500)
-    equal(tracker.start.enabled, true)
-    SlashCmdList.TEAMFITTACTICS("finish")
-    equal(#TeamfitTacticsDB.history, 1)
-    SlashCmdList.TEAMFITTACTICS("history")
-    assert(messages[#messages]:find("2500 / 2000 steps (manual)", 1, true))
-end)
-
-test("button and keyboard paths use the same quest lifecycle", function()
-    local tracker = boot()
-    tracker.goal:SetText("1500")
-    tracker.start.scripts.OnClick()
-    equal(TeamfitTacticsDB.active.goal, 1500)
-    tracker.steps:SetText("900")
-    tracker.steps.scripts.OnEnterPressed(tracker.steps)
-    equal(TeamfitTacticsDB.active.steps, 900)
-    tracker.finish.scripts.OnClick()
-    equal(TeamfitTacticsDB.history[1].steps, 900)
-    tracker.goal:SetText("1000")
-    tracker.goal.scripts.OnEnterPressed(tracker.goal)
-    tracker.steps:SetText("500")
-    tracker.update.scripts.OnClick()
-    equal(TeamfitTacticsDB.active.steps, 500)
-end)
-
-test("hide, reload, restore, and reset position preserve the active quest", function()
-    local tracker = boot()
-    SlashCmdList.TEAMFITTACTICS("start 2000")
-    SlashCmdList.TEAMFITTACTICS("steps 650")
     SlashCmdList.TEAMFITTACTICS("")
-    equal(tracker.shown, false)
-    tracker = boot(TeamfitTacticsDB)
-    equal(tracker.shown, false)
-    equal(tracker.steps:GetText(), "650")
-    tracker.scripts.OnDragStop(tracker)
-    equal(TeamfitTacticsDB.position.x, 0)
-    SlashCmdList.TEAMFITTACTICS("resetposition")
-    equal(tracker.shown, true)
-    equal(TeamfitTacticsDB.position, nil)
-    equal(TeamfitTacticsDB.active.steps, 650)
-end)
-
-test("unsupported saved data prevents initialization and remains intact", function()
-    local future = { version = 99, preserve = true }
-    local tracker, messages = boot(future)
-    equal(tracker, nil)
-    equal(TeamfitTacticsDB, future)
-    assert(future.preserve)
-    equal(SlashCmdList.TEAMFITTACTICS, nil)
-    assert(messages[1]:find("preserved", 1, true))
+    assert(messages[#messages]:find("isn't available yet", 1, true))
 end)
 
 print(passed .. " tests passed")
