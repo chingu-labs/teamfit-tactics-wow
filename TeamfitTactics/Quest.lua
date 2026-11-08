@@ -107,4 +107,3 @@ function Quest.Progress(state)
     end
     return math.min(1, state.active.steps / state.active.goal)
 end
-

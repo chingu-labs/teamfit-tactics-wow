@@ -15,4 +15,3 @@ with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
     archive.write(root / "LICENSE", "TeamfitTactics/LICENSE")
     archive.write(root / "README.md", "TeamfitTactics/README.md")
 print(output)
-

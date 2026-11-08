@@ -103,4 +103,3 @@ without an account. Do not add promotional popups or subscription gates.
 
 [MIT](LICENSE). No Blizzard artwork, trademarks, or third-party addon code is
 licensed by this repository. This is an independent community project.
-

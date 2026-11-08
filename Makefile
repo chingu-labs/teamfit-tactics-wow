@@ -12,4 +12,3 @@ test:
 
 package:
 	$(PYTHON) scripts/package.py
-

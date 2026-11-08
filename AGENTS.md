@@ -13,4 +13,3 @@
   Static checks and test doubles do not establish in-game compatibility.
 - Obtain authorization before pushing, publishing, installing into WoW, or
   changing shared-service configuration. Preserve unrelated work.
-

@@ -140,4 +140,3 @@ function ns.CreateTracker(state, actions)
     frame:SetShown(not state.hidden)
     return frame
 end
-
