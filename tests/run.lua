@@ -112,6 +112,17 @@ test("retired commands cannot modify or reinterpret legacy step data", function(
     SlashCmdList = {}
     local messages = {}
     DEFAULT_CHAT_FRAME = { AddMessage = function(_, value) table.insert(messages, value) end }
+    local methods = {}
+    for _, name in ipairs({ "SetSize", "SetPoint", "SetClampedToScreen", "SetBackdrop",
+        "SetBackdropColor", "SetWidth", "SetJustifyH", "SetText", "Show", "RegisterEvent",
+        "UnregisterEvent", "SetScript" }) do
+        methods[name] = function() end
+    end
+    function methods:CreateFontString() return setmetatable({}, { __index = methods }) end
+    UIParent = {}
+    CreateFrame = function() return setmetatable({}, { __index = methods }) end
+    GetServerTime = function() return 1000 end
+    TeamfitTacticsConfig = nil
     assert(loadfile("TeamfitTactics/Addon.lua"))()
     for _, command in ipairs({ "steps 9999", "start 2000", "finish" }) do
         SlashCmdList.TEAMFITTACTICS(command)
@@ -121,7 +132,7 @@ test("retired commands cannot modify or reinterpret legacy step data", function(
         assert(messages[#messages]:find("removed", 1, true))
     end
     SlashCmdList.TEAMFITTACTICS("")
-    assert(messages[#messages]:find("isn't available yet", 1, true))
+    equal(TeamfitTacticsDB, saved)
 end)
 
 print(passed .. " tests passed")
