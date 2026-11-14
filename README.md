@@ -12,19 +12,20 @@ an OS overlay do not satisfy that requirement.
 
 The manual-entry prototype is retired. Its code is kept under `legacy/`, outside
 the addon manifest and installation package. Existing per-character saved data
-is preserved without being interpreted as measured steps. `/teamfit` reports
-that live tracking is not yet available; it collects no steps.
+is preserved without being interpreted as measured steps. The product shell now
+contains a step-only panel, but its package has no ingress slots and therefore
+shows that the desktop bridge is not installed.
 
 The next gate is [the isolated live-ingress diagnostic](spikes/live-ingress/README.md).
 It tests whether the actual Classic client can automatically read fresh data
 through previously unused load-on-demand addon slots. It uses synthetic sequence
 numbers explicitly labeled as transport fixtures, never step counts.
 
-**A live step counter has not been implemented or verified.** The diagnostic
-is not a sensor bridge, a renewable transport, or evidence of Blizzard approval.
-No client was installed or controlled, and no production service was changed.
-Phone acquisition, any watch delivery, secure transport, source freshness and
-account isolation still need their own end-to-end proof.
+The [bounded step bridge](bridge/README.md) generates the product addon with a
+finite slot pool for measured KingSmith WalkingPad session steps. It provides
+live/stale/disconnected/stopped/exhausted states and rejects replayed or reset
+sources. **It has not been verified in a real WoW client or with physical
+hardware.** It is not renewable transport or evidence of Blizzard approval.
 
 ## Why test the bridge first?
 
@@ -51,14 +52,15 @@ make test
 make package
 ```
 
-`make package` builds the current product shell, not a working live counter.
-Generate the diagnostic separately for your exact client build using its
-[setup instructions](spikes/live-ingress/README.md).
+`make package` builds the product shell without an ingress pool. Generate the
+bounded step bridge separately for the exact client build using its
+[setup instructions](bridge/README.md). The earlier synthetic
+[transport diagnostic](spikes/live-ingress/README.md) remains isolated evidence.
 
-Tests cover preservation of legacy data, disabled manual commands, transport
-freshness/replay/exhaustion states, fixture generation and the Python-to-Lua
-payload contract. WoW API doubles do not render the interface or prove runtime
-file loading, client compatibility, performance or real sensor behavior.
+Tests cover preservation of legacy data, disabled manual commands, step
+freshness/disconnection/replay/exhaustion states, bridge generation and the
+Python-to-Lua payload contract. WoW API doubles do not render the interface or
+prove runtime file loading, client compatibility, performance or sensor behavior.
 
 ## References
 

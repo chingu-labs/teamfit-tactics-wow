@@ -1,8 +1,8 @@
 ## Interface: 11509, 50504
 ## Title: Teamfit Tactics
-## Notes: Live real-world step tracking, currently awaiting bridge verification.
+## Notes: Live real-world step display; desktop bridge installation required.
 ## Author: Chingu Labs
-## Version: 0.2.0-dev
+## Version: 0.3.0-dev
 ## SavedVariablesPerCharacter: TeamfitTacticsDB
 ## X-License: MIT
 
